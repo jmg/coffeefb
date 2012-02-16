@@ -39,10 +39,9 @@ class Coffeefb
             access_token = data['access_token']
             callback(access_token)
 
-    _make_auth_request: (access_token, path, params, callback) ->
+    _make_auth_request: (path, params, callback) ->
 
         url = "#{@GRAPH_URL}#{path}?"
-        params['access_token'] = access_token
         @_make_request url, params, callback
 
     _build_url: (path, params) ->
@@ -64,9 +63,9 @@ class Coffeefb
         }
         return @_get_auth_url params, redirect_uri
 
-    api: (access_token, method, params, callback) ->
+    api: (method, params, callback) ->
 
-        @_make_auth_request access_token, method, params, callback
+        @_make_auth_request method, params, callback
 
 
 exports = module.exports = Coffeefb
