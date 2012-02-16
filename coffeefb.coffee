@@ -1,6 +1,6 @@
-http = require 'http'
 qs = require 'querystring'
 url_parser = require 'url'
+request = require 'request'
 
 class Coffeefb
 
@@ -9,6 +9,7 @@ class Coffeefb
         @FACEBOOK_URL = "https://www.facebook.com/"
         @GRAPH_URL = "https://graph.facebook.com/"
         @BASE_AUTH_URL = "#{@GRAPH_URL}oauth/authorize?"
+        @BASE_TOKEN_URL = "#{@GRAPH_URL}oauth/access_token?"
         @app_id = app_id
 
     _get_url_path: (dic) ->
@@ -23,7 +24,7 @@ class Coffeefb
         url = "#{@BASE_AUTH_URL}#{url_path}"
         return url
 
-    get_access_token: (app_secret_key, secret_code, redirect_uri) ->
+    get_access_token: (app_secret_key, secret_code, redirect_uri, callback) ->
 
         params = {
             "client_id": @app_id,
@@ -32,35 +33,40 @@ class Coffeefb
             "code" : secret_code,
         }
 
-        data = @_make_request @BASE_TOKEN_URL, params, (res) ->
+        data = @_make_request @BASE_TOKEN_URL, params, (body) ->
 
-            data = qs.parse res
-            @access_token = data['access_token']
-            @expires = data['expires']
+            data = qs.parse body
+            access_token = data['access_token']
+            callback(access_token)
 
-    _make_auth_request: (path, params, callback) ->
+    _make_auth_request: (access_token, path, params, callback) ->
 
-        params['access_token'] = @access_token
-        @_make_request @GRAPH_URL, params, callback
+        url = "#{@GRAPH_URL}#{path}?"
+        params['access_token'] = access_token
+        @_make_request url, params, callback
+
+    _build_url: (path, params) ->
+
+        return "#{path}#{@_get_url_path(params)}"
 
     _make_request: (host, params, callback) ->
 
-        path = @_get_url_path(params)
+        url = @_build_url(host, params)
 
-        data = {
-            host: host,
-            path: path
-        }
-
-        http.get data, (res) ->
-            callback(res)
+        request.get {url:url}, (e, r, body) ->
+            callback(body)
 
     get_auth_code_url: (redirect_uri) ->
 
         params = {
             "client_id": @app_id,
+            "scope": "user_about_me, email"
         }
         return @_get_auth_url params, redirect_uri
+
+    api: (access_token, method, params, callback) ->
+
+        @_make_auth_request access_token, method, params, callback
 
 
 exports = module.exports = Coffeefb
