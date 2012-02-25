@@ -39,11 +39,6 @@ class Coffeefb
             access_token = data['access_token']
             callback(access_token)
 
-    _make_auth_request: (path, params, callback) ->
-
-        url = "#{@GRAPH_URL}#{path}?"
-        @_make_request url, params, callback
-
     _build_url: (path, params) ->
 
         return "#{path}#{@_get_url_path(params)}"
@@ -55,17 +50,35 @@ class Coffeefb
         request.get {url:url}, (e, r, body) ->
             callback(body)
 
+    _make_post_request: (host, params, callback) ->
+
+        path = @_get_url_path(params)
+
+        request.post {url:host, body:path}, (e, r, body) ->
+            callback(body)
+
     get_auth_code_url: (redirect_uri) ->
 
         params = {
             "client_id": @app_id,
-            "scope": "user_about_me, email"
+            "scope": "user_about_me, email, publish_stream"
         }
         return @_get_auth_url params, redirect_uri
 
+    _is_empty: (obj) ->
+        (p for p of obj).length == 0
+
     api: (method, params, callback) ->
 
-        @_make_auth_request method, params, callback
+        access_token = params["access_token"]
+        delete params["access_token"]
+
+        url = "#{@GRAPH_URL}#{method}?access_token=#{access_token}"
+
+        if (@_is_empty(params))
+            return @_make_request url, {}, callback
+
+        @_make_post_request url, params, callback
 
 
 exports = module.exports = Coffeefb
