@@ -1,6 +1,7 @@
 qs = require 'querystring'
 url_parser = require 'url'
 request = require 'request'
+auth = require 'auth'
 
 class Coffeefb
 
@@ -11,6 +12,7 @@ class Coffeefb
         @BASE_AUTH_URL = "#{@GRAPH_URL}oauth/authorize?"
         @BASE_TOKEN_URL = "#{@GRAPH_URL}oauth/access_token?"
         @app_id = app_id
+        @permissions = null
 
     _get_url_path: (dic) ->
 
@@ -57,11 +59,22 @@ class Coffeefb
         request.post {url:host, body:path}, (e, r, body) ->
             callback(body)
 
+    set_permisions: (permissions) ->
+
+        @permissions = permissions
+
+    _get_default_scope: () ->
+
+        [p for p of auth].join(",")
+
     get_auth_code_url: (redirect_uri) ->
+
+        if not @permissions
+            @_get_default_scope()
 
         params = {
             "client_id": @app_id,
-            "scope": "user_about_me, email, publish_stream"
+            "scope": auth
         }
         return @_get_auth_url params, redirect_uri
 
