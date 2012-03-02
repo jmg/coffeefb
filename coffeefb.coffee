@@ -1,7 +1,7 @@
 qs = require 'querystring'
 url_parser = require 'url'
 request = require 'request'
-auth = require 'auth'
+auth = require './auth'
 
 class Coffeefb
 
@@ -65,20 +65,21 @@ class Coffeefb
 
     _get_default_scope: () ->
 
-        [p for p of auth].join(",")
+        [auth[p] for p of auth].join(",")
 
     get_auth_code_url: (redirect_uri) ->
 
         if not @permissions
-            @_get_default_scope()
+            @permissions = @_get_default_scope()
 
         params = {
             "client_id": @app_id,
-            "scope": auth
+            "scope": @permissions
         }
         return @_get_auth_url params, redirect_uri
 
     _is_empty: (obj) ->
+
         (p for p of obj).length == 0
 
     api: (method, params, callback) ->
